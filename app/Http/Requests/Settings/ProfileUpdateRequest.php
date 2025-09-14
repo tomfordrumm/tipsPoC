@@ -16,7 +16,8 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            // Name field removed from settings UI; keep optional if sent from other clients
+            'name' => ['sometimes', 'string', 'max:255'],
             'email' => [
                 'required',
                 'string',

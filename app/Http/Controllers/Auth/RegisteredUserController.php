@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -40,6 +41,13 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+        ]);
+
+        // Create a default profile with slug from the user's name
+        $user->profile()->create([
+            'slug' => Profile::generateUniqueSlug($user->name),
+            'display_name' => $user->name,
+            'quick_amounts' => [500, 1000, 2000, 5000],
         ]);
 
         event(new Registered($user));
