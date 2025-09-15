@@ -93,12 +93,6 @@ function numericAmount(): number {
   return Number.isFinite(n) ? Math.round(n) : 0
 }
 
-function isAmountValid() {
-  // Frontend rule: block only when 0; respect max cap
-  const n = numericAmount()
-  return n >= 1 && n <= max
-}
-
 function submit() {
   const n = numericAmount()
   if (!(n >= 1)) {
