@@ -22,7 +22,12 @@ const props = defineProps<Props>()
 
 function formatCents(cents: number) {
   const symbol = props.currency === 'eur' ? '€' : '$'
-  return `${symbol}${(cents / 100).toFixed(2)}`
+  const whole = Math.trunc(cents / 100)
+  const fractional = Math.abs(cents % 100)
+  // Show cents only when they are non-zero
+  return fractional === 0
+    ? `${symbol}${whole}`
+    : `${symbol}${(cents / 100).toFixed(2)}`
 }
 
 const form = useForm({

@@ -4,9 +4,22 @@ import { dashboard } from '@/routes'
 import { type BreadcrumbItem } from '@/types'
 import { Head, useForm } from '@inertiajs/vue3'
 import { Button } from '@/components/ui/button'
+import { ref } from 'vue'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import InputError from '@/components/InputError.vue'
 
 interface Props {
   totals: { total_cents: number; count: number; currency: 'eur' }
+  balance?: { available_cents: number; currency: 'eur'; payouts_count: number }
   transactions: Array<{ id: number; amount_cents: number; currency: string; status: string; created_at: string; paid_at?: string | null }>
   admin?: { is_admin: boolean; stats?: { users_count: number; active_payouts_count: number } | null }
 }
@@ -19,11 +32,55 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 function formatAmount(cents: number, currency: string) {
   const symbol = currency.toLowerCase() === 'eur' ? '€' : currency.toUpperCase() + ' '
-  return `${symbol}${(cents / 100).toFixed(2)}`
+  // Show cents only if non-zero
+  const whole = Math.trunc(cents / 100)
+  const fractional = Math.abs(cents % 100)
+  return fractional === 0 ? `${symbol}${whole}` : `${symbol}${(cents / 100).toFixed(2)}`
 }
 
 const payoutForm = useForm<{ amount_cents: number | null }>({ amount_cents: null })
+const payoutOpen = ref(false)
+const payoutAmount = ref<string>('')
+const payoutErrorInline = ref<string>('')
+const availableCents = ref<number>(props.balance?.available_cents ?? 0)
+const payoutsCount = ref<number>(props.balance?.payouts_count ?? 0)
 const isAdmin = !!props.admin?.is_admin
+
+function openPayoutDialog() {
+  payoutErrorInline.value = ''
+  payoutAmount.value = ''
+  if (availableCents.value <= 0) {
+    payoutErrorInline.value = 'No available balance to withdraw.'
+    return
+  }
+  payoutOpen.value = true
+}
+
+function setAll() {
+  payoutAmount.value = (availableCents.value / 100).toFixed(2)
+}
+
+function submitPayout() {
+  // Normalize to cents
+  const normalized = Number((payoutAmount.value || '').toString().replace(/[^0-9.]/g, ''))
+  const cents = isFinite(normalized) ? Math.round(normalized * 100) : 0
+  payoutForm.amount_cents = Number.isFinite(cents) && cents > 0 ? cents : null
+  payoutForm.post('/payout-requests', {
+    preserveScroll: true,
+    onSuccess: () => {
+      // Optimistically update dashboard widgets without full reload
+      if (payoutForm.amount_cents === null) {
+        availableCents.value = 0
+      } else {
+        availableCents.value = Math.max(0, availableCents.value - payoutForm.amount_cents)
+      }
+      payoutsCount.value = payoutsCount.value + 1
+      payoutForm.reset()
+      payoutAmount.value = ''
+      payoutOpen.value = false
+    },
+  })
+}
 </script>
 
 <template>
@@ -41,10 +98,38 @@ const isAdmin = !!props.admin?.is_admin
           <div class="mt-1 text-2xl font-semibold">{{ props.totals.count }}</div>
         </div>
         <template v-if="!isAdmin">
-          <div class="flex items-end justify-end rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-            <form @submit.prevent="payoutForm.post('/payout-requests')">
-              <Button type="submit" :disabled="payoutForm.processing">Request Payout</Button>
-            </form>
+          <div class="flex items-center justify-between rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border gap-4">
+            <div class="text-sm">
+              <div class="text-muted-foreground">Available Balance</div>
+              <div class="mt-1 font-medium">{{ formatAmount(availableCents, props.totals.currency) }}</div>
+              <div class="mt-2 text-muted-foreground">Payouts: {{ props.balance?.payouts_count ?? 0 }}</div>
+              <p v-if="payoutErrorInline" class="mt-2 text-xs text-red-600">{{ payoutErrorInline }}</p>
+            </div>
+            <div>
+              <Dialog :open="payoutOpen" @update:open="(v: boolean) => (payoutOpen = v)">
+                <Button type="button" :disabled="payoutForm.processing" @click="openPayoutDialog">Request Payout</Button>
+                <DialogContent>
+                  <DialogHeader class="space-y-2">
+                    <DialogTitle>Request payout</DialogTitle>
+                    <DialogDescription>Enter amount to withdraw or withdraw all available funds.</DialogDescription>
+                  </DialogHeader>
+                  <div class="grid gap-2">
+                    <label for="payout_amount" class="text-sm font-medium">Amount ({{ props.totals.currency.toUpperCase() }})</label>
+                    <div class="flex items-center gap-2">
+                      <Input id="payout_amount" v-model="payoutAmount" type="text" inputmode="decimal" placeholder="0.00" class="max-w-[200px]" />
+                      <Button type="button" variant="secondary" @click="setAll">All ({{ formatAmount(availableCents, props.totals.currency) }})</Button>
+                    </div>
+                    <InputError :message="payoutForm.errors.amount_cents" />
+                  </div>
+                  <DialogFooter class="gap-2">
+                    <DialogClose as-child>
+                      <Button variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button type="button" :disabled="payoutForm.processing" @click="submitPayout">Submit</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </template>
         <template v-else>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminProfileUpdateRequest;
+use App\Http\Requests\Admin\AdminPasswordUpdateRequest;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -69,5 +70,13 @@ class UsersController extends Controller
 
         return back()->with('status', 'profile-updated');
     }
-}
 
+    public function updatePassword(AdminPasswordUpdateRequest $request, User $user): RedirectResponse
+    {
+        // `password` is cast as 'hashed' in the User model, so assignment will hash it
+        $user->password = $request->validated('password');
+        $user->save();
+
+        return back()->with('status', 'password-updated');
+    }
+}

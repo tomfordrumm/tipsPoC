@@ -29,6 +29,13 @@ function toNumber(v: any) {
   const n = Number(v)
   return Number.isFinite(n) ? Math.round(n) : 0
 }
+
+const passwordForm = useForm({ _method: 'PATCH', password: '', password_confirmation: '' })
+function submitPassword() {
+  passwordForm.post(`/admin/users/${props.user.id}/password`, {
+    onSuccess: () => passwordForm.reset(),
+  })
+}
 </script>
 
 <template>
@@ -71,7 +78,24 @@ function toNumber(v: any) {
           </div>
         </form>
       </div>
+
+      <div class="rounded-lg border p-4">
+        <h2 class="font-semibold mb-3">Password</h2>
+        <form @submit.prevent="submitPassword" class="space-y-4 max-w-sm">
+          <div>
+            <label class="text-sm font-medium">New password</label>
+            <Input v-model="passwordForm.password" type="password" autocomplete="new-password" />
+            <InputError :message="passwordForm.errors.password" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Confirm password</label>
+            <Input v-model="passwordForm.password_confirmation" type="password" autocomplete="new-password" />
+          </div>
+          <div>
+            <Button type="submit" :disabled="passwordForm.processing">Update password</Button>
+          </div>
+        </form>
+      </div>
     </div>
   </AppLayout>
 </template>
-

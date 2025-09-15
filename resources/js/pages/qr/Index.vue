@@ -34,9 +34,30 @@ onMounted(async () => {
   }
 })
 
-function downloadPng() {
-  if (!qrInstance) return
-  qrInstance.download({ name: `tip-${props.slug}`, extension: 'png' })
+async function downloadPng() {
+  // Download a high-resolution PNG (1024x1024) without changing on-page size
+  const size = 1024
+  const mod = await import('qr-code-styling')
+  const QRCodeStyling = mod.default
+  const hiRes = new QRCodeStyling({
+    width: size,
+    height: size,
+    data: props.url,
+    type: 'png',
+    dotsOptions: { color: '#000000', type: 'rounded' },
+    backgroundOptions: { color: '#ffffff' },
+  })
+
+  const blob = await hiRes.getRawData('png')
+  if (!blob) return
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `tip-${props.slug}.png`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
 
 async function copyLink() {

@@ -30,7 +30,13 @@ function formatAmount(cents: number | null) {
 
 function updateStatus(p: Payout, status: 'approved' | 'rejected') {
   const form = useForm({ _method: 'PATCH', status, admin_note: p.admin_note || '' })
-  form.post(`/admin/payout-requests/${p.id}`)
+  form.post(`/admin/payout-requests/${p.id}`, {
+    onSuccess: () => {
+      // Optimistically reflect new status so action buttons hide immediately
+      p.status = status
+      p.processed_at = new Date().toISOString()
+    },
+  })
 }
 </script>
 
@@ -65,10 +71,11 @@ function updateStatus(p: Payout, status: 'approved' | 'rejected') {
                 <textarea v-model="p.admin_note" rows="2" class="min-h-16 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"></textarea>
               </td>
               <td class="py-2 px-3">
-                <div class="flex gap-2">
+                <div v-if="p.status === 'pending'" class="flex gap-2">
                   <Button size="sm" @click="updateStatus(p, 'approved')">Approve</Button>
                   <Button size="sm" variant="destructive" @click="updateStatus(p, 'rejected')">Reject</Button>
                 </div>
+                <div v-else class="text-muted-foreground text-xs">—</div>
               </td>
             </tr>
           </tbody>
@@ -81,4 +88,3 @@ function updateStatus(p: Payout, status: 'approved' | 'rejected') {
     </div>
   </AppLayout>
 </template>
-

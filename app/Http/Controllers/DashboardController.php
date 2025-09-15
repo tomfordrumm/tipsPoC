@@ -22,6 +22,16 @@ class DashboardController extends Controller
         $totalCents = (int) $succeeded->clone()->sum('amount_cents');
         $count = (int) $succeeded->clone()->count();
 
+        // Calculate available balance = succeeded tips - outstanding payouts (pending/approved)
+        $payoutsCents = (int) \App\Models\PayoutRequest::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->sum('amount_cents');
+        $availableCents = max(0, $totalCents - $payoutsCents);
+        $payoutsCount = (int) \App\Models\PayoutRequest::query()
+            ->where('user_id', $user->id)
+            ->count();
+
         $transactions = [];
         if (! $isAdmin) {
             $transactions = Tip::query()
@@ -54,6 +64,11 @@ class DashboardController extends Controller
                 'total_cents' => $totalCents,
                 'count' => $count,
                 'currency' => 'eur',
+            ],
+            'balance' => [
+                'available_cents' => $availableCents,
+                'currency' => 'eur',
+                'payouts_count' => $payoutsCount,
             ],
             'transactions' => $transactions,
             'admin' => [

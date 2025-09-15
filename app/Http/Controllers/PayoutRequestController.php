@@ -15,9 +15,34 @@ class PayoutRequestController extends Controller
     {
         $user = $request->user();
 
+        // Calculate available balance: succeeded tips - outstanding payouts (pending/approved)
+        $succeededTotal = (int) \App\Models\Tip::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'succeeded')
+            ->sum('amount_cents');
+        $reserved = (int) PayoutRequest::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->sum('amount_cents');
+        $available = max(0, $succeededTotal - $reserved);
+
+        $requested = $request->validated('amount_cents');
+        if (is_null($requested)) {
+            // "All" request -> take full available
+            $requested = $available;
+        }
+
+        if ($available <= 0) {
+            return back()->withErrors(['amount_cents' => 'No available balance to withdraw.'])->withInput();
+        }
+
+        if ($requested < 1 || $requested > $available) {
+            return back()->withErrors(['amount_cents' => 'Amount must be between 1 and your available balance.'])->withInput();
+        }
+
         $payout = PayoutRequest::create([
             'user_id' => $user->id,
-            'amount_cents' => $request->validated('amount_cents'),
+            'amount_cents' => (int) $requested,
             'status' => 'pending',
             'requested_at' => now(),
         ]);
@@ -30,4 +55,3 @@ class PayoutRequestController extends Controller
         return back()->with('status', 'payout-requested');
     }
 }
-

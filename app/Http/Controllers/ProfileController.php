@@ -27,7 +27,11 @@ class ProfileController extends Controller
                 'display_name' => $profile->display_name,
                 'bio' => $profile->bio,
                 'review_url' => $profile->review_url,
-                'quick_amounts' => $profile->quick_amounts ?: [null, null, null, null],
+                // Ensure numbers are sent to the frontend; treat non-numeric as null
+                'quick_amounts' => array_map(
+                    fn($v) => is_null($v) ? null : (is_numeric($v) ? (int) $v : null),
+                    $profile->quick_amounts ?: [null, null, null, null]
+                ),
                 'avatar_path' => $profile->avatar_path,
                 'avatar_url' => $profile->avatar_path ? asset('storage/'.$profile->avatar_path) : null,
             ],
@@ -41,6 +45,11 @@ class ProfileController extends Controller
         $profile = $user->profile ?: new Profile(['user_id' => $user->id]);
 
         $data = $request->safe()->only(['slug', 'display_name', 'bio', 'review_url', 'quick_amounts']);
+
+        // Normalize quick amounts to integers to avoid storing numeric strings
+        if (isset($data['quick_amounts']) && is_array($data['quick_amounts'])) {
+            $data['quick_amounts'] = array_map(fn($v) => (int) $v, $data['quick_amounts']);
+        }
 
         if ($request->hasFile('avatar')) {
             if ($profile->avatar_path) {
