@@ -30,9 +30,14 @@ function formatCents(cents: number) {
     : `${symbol}${(cents / 100).toFixed(2)}`
 }
 
+// Choose initial amount: first quick amount if available and > 0, otherwise fallback to 1 cent
+const initialAmount = Array.isArray(props.profile.quick_amounts) && props.profile.quick_amounts.length > 0 && (props.profile.quick_amounts[0] ?? 0) > 0
+  ? props.profile.quick_amounts[0]
+  : 1
+
 const form = useForm({
   slug: props.profile.slug,
-  amount_cents: props.profile.quick_amounts?.[0] ?? props.minAmountCents,
+  amount_cents: initialAmount,
   currency: props.currency,
 })
 
@@ -44,17 +49,21 @@ const max = props.maxAmountCents
 function setQuickAmount(cents: number) {
   form.amount_cents = cents
   customAmount.value = (cents / 100).toFixed(2)
+  if (cents >= 1) form.clearErrors('amount_cents')
 }
 
 watch(customAmount, (value) => {
   const normalized = Number((value || '0').replace(/[^0-9.]/g, ''))
   if (!isFinite(normalized)) return
   let cents = Math.round(normalized * 100)
-  // don't let it drift outside bounds while typing; allow empty
+  // Allow 0 while typing; clamp only to [0, max]
   if (value !== '') {
-    cents = Math.min(Math.max(cents, min), max)
+    cents = Math.min(Math.max(cents, 0), max)
   }
   form.amount_cents = cents
+  if (cents >= 1) {
+    form.clearErrors('amount_cents')
+  }
 })
 
 function blockInvalidChars(e: KeyboardEvent) {
@@ -79,11 +88,25 @@ function onCustomInput(e: Event) {
   customAmount.value = v
 }
 
+function numericAmount(): number {
+  const n = Number((form.amount_cents as unknown) as number)
+  return Number.isFinite(n) ? Math.round(n) : 0
+}
+
 function isAmountValid() {
-  return Number.isInteger(form.amount_cents) && form.amount_cents >= min && form.amount_cents <= max
+  // Frontend rule: block only when 0; respect max cap
+  const n = numericAmount()
+  return n >= 1 && n <= max
 }
 
 function submit() {
+  const n = numericAmount()
+  if (!(n >= 1)) {
+    form.setError('amount_cents', 'Amount must be at least 1 cent')
+    return
+  }
+  // Ensure payload is an integer number of cents
+  form.amount_cents = n
   form.post('/pay/checkout', {
     preserveScroll: true,
   })
@@ -137,7 +160,7 @@ function submit() {
         </div>
 
         <div class="mt-6">
-          <Button class="w-full" :disabled="form.processing || !isAmountValid()" @click="submit">Pay {{ formatCents(form.amount_cents) }}</Button>
+          <Button class="w-full" :disabled="form.processing" @click="submit">Pay {{ formatCents(form.amount_cents) }}</Button>
         </div>
       </div>
     </div>
