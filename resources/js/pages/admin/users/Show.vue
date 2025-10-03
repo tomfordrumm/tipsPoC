@@ -27,7 +27,7 @@ function submit() {
 
 function toNumber(v: any) {
   const n = Number(v)
-  return Number.isFinite(n) ? Math.round(n) : 0
+  return Number.isFinite(n) ? Math.round(n) : null
 }
 
 const passwordForm = useForm({ _method: 'PATCH', password: '', password_confirmation: '' })
@@ -69,8 +69,17 @@ function submitPassword() {
           <div>
             <label class="text-sm font-medium">Quick amounts (cents)</label>
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 mt-1">
-              <Input v-for="(amt, i) in form.quick_amounts" :key="i" type="number" min="1" step="1" v-model.number="form.quick_amounts[i]" @change="form.quick_amounts[i] = toNumber(form.quick_amounts[i])" />
+              <Input
+                v-for="(amt, i) in form.quick_amounts"
+                :key="i"
+                type="number"
+                min="100"
+                step="50"
+                v-model.number="form.quick_amounts[i]"
+                @change="form.quick_amounts[i] = toNumber(form.quick_amounts[i])"
+              />
             </div>
+            <p class="mt-1 text-xs text-muted-foreground">Values must be unique and at least 100 (1&nbsp;€).</p>
             <InputError :message="form.errors.quick_amounts" />
           </div>
           <div>

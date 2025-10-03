@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->unsignedInteger('amount_cents')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('requested');
             $table->timestamp('requested_at')->useCurrent();
             $table->timestamp('processed_at')->nullable();
             $table->text('admin_note')->nullable();
@@ -27,4 +27,3 @@ return new class extends Migration
         Schema::dropIfExists('payout_requests');
     }
 };
-

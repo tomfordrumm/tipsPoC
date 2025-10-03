@@ -25,8 +25,7 @@ class ProfileFactory extends Factory
             'avatar_path' => null,
             'review_url' => fake()->optional()->url(),
             // store money as cents in quick amounts
-            'quick_amounts' => [500, 1000, 2000],
+            'quick_amounts' => [500, 1000, 2000, 3000],
         ];
     }
 }
-

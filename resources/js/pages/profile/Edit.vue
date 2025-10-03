@@ -89,7 +89,17 @@ const breadcrumbItems: BreadcrumbItem[] = [
         </div>
 
         <div class="grid gap-2">
-          <Label for="review_url">Reviews URL</Label>
+          <div class="flex items-center justify-between gap-2">
+            <Label for="review_url">Reviews URL</Label>
+            <a
+              href="https://support.google.com/business/answer/16334724"
+              target="_blank"
+              rel="noopener"
+              class="text-xs text-primary underline"
+            >
+              How to find this link?
+            </a>
+          </div>
           <Input id="review_url" v-model="form.review_url" placeholder="https://..." />
           <InputError :message="form.errors.review_url" />
         </div>
@@ -103,8 +113,18 @@ const breadcrumbItems: BreadcrumbItem[] = [
         <div class="grid gap-2">
           <Label>Quick amounts (4 values, cents)</Label>
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Input v-for="(amt, i) in form.quick_amounts" :key="i" type="number" min="1" step="1" v-model.number="form.quick_amounts[i]" />
+            <Input
+              v-for="(amt, i) in form.quick_amounts"
+              :key="i"
+              type="number"
+              min="100"
+              step="50"
+              v-model.number="form.quick_amounts[i]"
+            />
           </div>
+          <p class="text-xs text-muted-foreground">
+            Minimum 100 (1&nbsp;€) and each value must be unique.
+          </p>
           <InputError :message="form.errors.quick_amounts" />
           <InputError
             v-for="i in 4"

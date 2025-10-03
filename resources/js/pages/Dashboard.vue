@@ -2,9 +2,9 @@
 import AppLayout from '@/layouts/AppLayout.vue'
 import { dashboard } from '@/routes'
 import { type BreadcrumbItem } from '@/types'
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, router, useForm } from '@inertiajs/vue3'
 import { Button } from '@/components/ui/button'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   Dialog,
   DialogClose,
@@ -17,11 +17,22 @@ import {
 import { Input } from '@/components/ui/input'
 import InputError from '@/components/InputError.vue'
 
+interface Transaction {
+  id: string
+  type: 'tip' | 'payout'
+  amount_cents: number | null
+  currency: string
+  status: string | null
+  occurred_at: string | null
+}
+
 interface Props {
   totals: { total_cents: number; count: number; currency: 'eur' }
   balance?: { available_cents: number; currency: 'eur'; payouts_count: number }
-  transactions: Array<{ id: number; amount_cents: number; currency: string; status: string; created_at: string; paid_at?: string | null }>
+  transactions: Transaction[]
   admin?: { is_admin: boolean; stats?: { users_count: number; active_payouts_count: number } | null }
+  filters?: { range?: string }
+  rangeOptions?: Array<{ value: string; label: string }>
 }
 
 const props = defineProps<Props>()
@@ -30,7 +41,8 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Dashboard', href: dashboard().url },
 ]
 
-function formatAmount(cents: number, currency: string) {
+function formatAmount(cents: number | null, currency: string) {
+  if (cents == null) return '—'
   const symbol = currency.toLowerCase() === 'eur' ? '€' : currency.toUpperCase() + ' '
   // Show cents only if non-zero
   const whole = Math.trunc(cents / 100)
@@ -45,6 +57,22 @@ const payoutErrorInline = ref<string>('')
 const availableCents = ref<number>(props.balance?.available_cents ?? 0)
 const payoutsCount = ref<number>(props.balance?.payouts_count ?? 0)
 const isAdmin = !!props.admin?.is_admin
+const rangeOptions = computed(() => props.rangeOptions ?? [])
+const activeRange = computed(() => props.filters?.range ?? 'all')
+
+watch(
+  () => props.balance?.available_cents,
+  (value) => {
+    availableCents.value = value ?? 0
+  }
+)
+
+watch(
+  () => props.balance?.payouts_count,
+  (value) => {
+    payoutsCount.value = value ?? 0
+  }
+)
 
 function openPayoutDialog() {
   payoutErrorInline.value = ''
@@ -61,10 +89,37 @@ function setAll() {
 }
 
 function submitPayout() {
-  // Normalize to cents
-  const normalized = Number((payoutAmount.value || '').toString().replace(/[^0-9.]/g, ''))
-  const cents = isFinite(normalized) ? Math.round(normalized * 100) : 0
-  payoutForm.amount_cents = Number.isFinite(cents) && cents > 0 ? cents : null
+  payoutErrorInline.value = ''
+  payoutForm.amount_cents = null
+
+  const raw = (payoutAmount.value || '').trim()
+
+  if (raw === '') {
+    payoutForm.amount_cents = null
+  } else {
+    const sanitized = raw.replace(/[^0-9.,]/g, '').replace(/,/g, '.')
+    const normalized = Number(sanitized)
+
+    if (!sanitized || Number.isNaN(normalized)) {
+      payoutErrorInline.value = 'Enter a valid amount.'
+      return
+    }
+
+    if (normalized <= 0) {
+      payoutErrorInline.value = 'Amount must be greater than zero.'
+      return
+    }
+
+    const cents = Math.round(normalized * 100)
+
+    if (cents > availableCents.value) {
+      payoutErrorInline.value = 'Amount exceeds available balance.'
+      return
+    }
+
+    payoutForm.amount_cents = cents
+  }
+
   payoutForm.post('/payout-requests', {
     preserveScroll: true,
     onSuccess: () => {
@@ -78,8 +133,24 @@ function submitPayout() {
       payoutForm.reset()
       payoutAmount.value = ''
       payoutOpen.value = false
+      payoutErrorInline.value = ''
     },
   })
+}
+
+function changeRange(range: string) {
+  if (range === activeRange.value) {
+    return
+  }
+  router.get(
+    dashboard().url,
+    { range },
+    {
+      preserveScroll: true,
+      preserveState: true,
+      replace: true,
+    }
+  )
 }
 </script>
 
@@ -146,23 +217,37 @@ function submitPayout() {
 
       <div v-if="!isAdmin" class="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
         <div class="border-b border-sidebar-border/70 px-4 py-3 text-sm font-medium dark:border-sidebar-border">Transactions</div>
-        <div class="overflow-x-auto p-4">
+        <div class="overflow-x-auto p-4 space-y-4">
+          <div class="flex flex-wrap gap-2">
+            <Button
+              v-for="option in rangeOptions"
+              :key="option.value"
+              size="sm"
+              type="button"
+              :variant="option.value === activeRange ? 'default' : 'outline'"
+              @click="changeRange(option.value)"
+            >
+              {{ option.label }}
+            </Button>
+          </div>
           <table class="w-full text-left text-sm">
             <thead class="text-xs text-muted-foreground">
               <tr>
                 <th class="py-2">Date</th>
+                <th class="py-2">Type</th>
                 <th class="py-2">Amount</th>
                 <th class="py-2">Status</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="t in props.transactions" :key="t.id" class="border-t border-sidebar-border/70">
-                <td class="py-2">{{ new Date(t.paid_at || t.created_at).toLocaleString() }}</td>
+                <td class="py-2">{{ t.occurred_at ? new Date(t.occurred_at).toLocaleString() : '—' }}</td>
+                <td class="py-2 capitalize">{{ t.type }}</td>
                 <td class="py-2">{{ formatAmount(t.amount_cents, t.currency) }}</td>
-                <td class="py-2 capitalize">{{ t.status }}</td>
+                <td class="py-2 capitalize">{{ t.status || '—' }}</td>
               </tr>
               <tr v-if="props.transactions.length === 0">
-                <td class="py-6 text-muted-foreground" colspan="3">No transactions yet.</td>
+                <td class="py-6 text-muted-foreground" colspan="4">No transactions yet.</td>
               </tr>
             </tbody>
           </table>

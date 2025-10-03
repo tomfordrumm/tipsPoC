@@ -28,7 +28,7 @@ function formatAmount(cents: number | null) {
   return `€${(cents / 100).toFixed(2)}`
 }
 
-function updateStatus(p: Payout, status: 'approved' | 'rejected') {
+function updateStatus(p: Payout, status: 'paid' | 'rejected') {
   const form = useForm({ _method: 'PATCH', status, admin_note: p.admin_note || '' })
   form.post(`/admin/payout-requests/${p.id}`, {
     onSuccess: () => {
@@ -68,11 +68,19 @@ function updateStatus(p: Payout, status: 'approved' | 'rejected') {
               <td class="py-2 px-3">{{ p.requested_at ? new Date(p.requested_at).toLocaleString() : '—' }}</td>
               <td class="py-2 px-3">{{ p.processed_at ? new Date(p.processed_at).toLocaleString() : '—' }}</td>
               <td class="py-2 px-3">
-                <textarea v-model="p.admin_note" rows="2" class="min-h-16 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"></textarea>
+                <template v-if="p.status === 'requested'">
+                  <textarea v-model="p.admin_note" rows="2" class="min-h-16 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"></textarea>
+                </template>
+                <template v-else>
+                  <div v-if="p.admin_note" class="rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+                    {{ p.admin_note }}
+                  </div>
+                  <span v-else class="text-sm text-muted-foreground">—</span>
+                </template>
               </td>
               <td class="py-2 px-3">
-                <div v-if="p.status === 'pending'" class="flex gap-2">
-                  <Button size="sm" @click="updateStatus(p, 'approved')">Approve</Button>
+                <div v-if="p.status === 'requested'" class="flex gap-2">
+                  <Button size="sm" @click="updateStatus(p, 'paid')">Mark as paid</Button>
                   <Button size="sm" variant="destructive" @click="updateStatus(p, 'rejected')">Reject</Button>
                 </div>
                 <div v-else class="text-muted-foreground text-xs">—</div>

@@ -40,7 +40,7 @@ class PayoutRequestsController extends Controller
         $data = $request->validated();
         $payoutRequest->status = $data['status'];
         $payoutRequest->admin_note = $data['admin_note'] ?? null;
-        $payoutRequest->processed_at = in_array($data['status'], ['approved', 'rejected'], true) ? now() : null;
+        $payoutRequest->processed_at = in_array($data['status'], ['paid', 'rejected'], true) ? now() : null;
         $payoutRequest->save();
 
         return back()->with('status', 'payout-status-updated');

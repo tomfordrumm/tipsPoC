@@ -15,14 +15,14 @@ class PayoutRequestController extends Controller
     {
         $user = $request->user();
 
-        // Calculate available balance: succeeded tips - outstanding payouts (pending/approved)
+        // Calculate available balance: succeeded tips - outstanding payouts (requested/paid)
         $succeededTotal = (int) \App\Models\Tip::query()
             ->where('user_id', $user->id)
             ->where('status', 'succeeded')
             ->sum('amount_cents');
         $reserved = (int) PayoutRequest::query()
             ->where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'approved'])
+            ->whereIn('status', ['requested', 'paid'])
             ->sum('amount_cents');
         $available = max(0, $succeededTotal - $reserved);
 
@@ -43,7 +43,7 @@ class PayoutRequestController extends Controller
         $payout = PayoutRequest::create([
             'user_id' => $user->id,
             'amount_cents' => (int) $requested,
-            'status' => 'pending',
+            'status' => 'requested',
             'requested_at' => now(),
         ]);
 

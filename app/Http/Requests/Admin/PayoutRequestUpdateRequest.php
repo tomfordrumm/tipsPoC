@@ -14,9 +14,8 @@ class PayoutRequestUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'string', 'in:pending,approved,rejected'],
+            'status' => ['required', 'string', 'in:requested,paid,rejected'],
             'admin_note' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }
-

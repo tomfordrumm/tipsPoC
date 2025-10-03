@@ -42,8 +42,22 @@ class UpdateProfileRequest extends FormRequest
                 'regex:/^[a-z0-9-]+$/',
                 Rule::unique('profiles', 'slug')->ignore(optional($profile)->id),
             ],
-            'quick_amounts' => ['required', 'array', 'size:4'],
-            'quick_amounts.*' => ['required', 'integer', 'min:1'],
+            'quick_amounts' => [
+                'required',
+                'array',
+                'size:4',
+                function (string $attribute, mixed $value, callable $fail): void {
+                    if (! is_array($value)) {
+                        return;
+                    }
+
+                    $normalized = array_map(static fn($v) => (int) $v, $value);
+                    if (count($normalized) !== count(array_unique($normalized))) {
+                        $fail(__('Quick amounts must be unique.'));
+                    }
+                },
+            ],
+            'quick_amounts.*' => ['required', 'integer', 'min:100'],
         ];
     }
 }
