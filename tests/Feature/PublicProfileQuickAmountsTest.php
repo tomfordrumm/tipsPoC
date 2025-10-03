@@ -15,7 +15,14 @@ class PublicProfileQuickAmountsTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Profile::factory()->for($user)->create([
+        $profile = $user->profile;
+        if (! $profile) {
+            $profile = Profile::factory()->for($user)->create([
+                'slug' => 'user-'.$user->id,
+            ]);
+        }
+
+        $profile->update([
             'slug' => 'user-'.$user->id,
             'quick_amounts' => [500, 1000, 2000, 3000],
         ]);
