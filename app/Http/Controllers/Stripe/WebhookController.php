@@ -161,6 +161,7 @@ class WebhookController extends Controller
         ]);
 
         $tip->save();
+        $tipTransitionedToSucceeded = ($tip->wasRecentlyCreated || $tip->wasChanged('status')) && $tip->status === 'succeeded';
         Log::info('Tip saved from checkout.session.completed', ['tip_id' => $tip->id]);
         // Update event record
         try {
@@ -175,7 +176,7 @@ class WebhookController extends Controller
         }
 
         // Notify on first transition to succeeded
-        if ($tip->wasChanged('status') && $tip->status === 'succeeded') {
+        if ($tipTransitionedToSucceeded) {
             $this->notifyTip($tip);
         }
     }
@@ -230,6 +231,7 @@ class WebhookController extends Controller
                 'paid_at' => now(),
             ]
         );
+        $tipTransitionedToSucceeded = ($tip->wasRecentlyCreated || $tip->wasChanged('status')) && $tip->status === 'succeeded';
 
         // Merge metadata
         $existingMeta = is_array($tip->metadata) ? $tip->metadata : [];
@@ -253,7 +255,7 @@ class WebhookController extends Controller
             Log::warning('Failed updating StripeEvent record', ['error' => $e->getMessage()]);
         }
 
-        if ($tip->wasChanged('status') && $tip->status === 'succeeded') {
+        if ($tipTransitionedToSucceeded) {
             $this->notifyTip($tip);
         }
     }

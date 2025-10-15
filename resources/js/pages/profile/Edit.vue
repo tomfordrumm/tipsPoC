@@ -62,7 +62,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
   <AppLayout :breadcrumbs="breadcrumbItems">
     <Head title="Edit Profile" />
 
-    <div class="mx-auto max-w-3xl space-y-8">
+    <div class="mx-auto max-w-3xl space-y-8 px-4 pt-4 sm:px-6 lg:px-8">
       <h1 class="text-2xl font-semibold tracking-tight">Profile</h1>
 
       <form @submit.prevent="submit" enctype="multipart/form-data" class="space-y-6">
@@ -140,5 +140,5 @@ const breadcrumbItems: BreadcrumbItem[] = [
       </form>
     </div>
   </AppLayout>
-  
+
 </template>
