@@ -111,10 +111,13 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue'
 
     <!-- Footer -->
     <footer class="mx-auto w-full max-w-6xl px-6 py-8 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-      <div class="border-t border-[#e3e3e0] py-4 dark:border-[#3E3E3A]">
-        © {{ new Date().getFullYear() }} Tips — Simple tipping for waiters
+      <div class="flex flex-col gap-2 border-t border-[#e3e3e0] py-4 dark:border-[#3E3E3A] sm:flex-row sm:items-center sm:justify-between">
+        <span>© {{ new Date().getFullYear() }} Tips — Simple tipping for waiters</span>
+        <div class="flex gap-4">
+          <Link href="/terms-and-conditions" class="hover:text-[#1b1b18] dark:hover:text-[#EDEDEC]">Terms</Link>
+          <Link href="/privacy-policy" class="hover:text-[#1b1b18] dark:hover:text-[#EDEDEC]">Privacy</Link>
+        </div>
       </div>
     </footer>
   </div>
 </template>
-

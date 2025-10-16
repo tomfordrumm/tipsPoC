@@ -36,6 +36,8 @@ if (isAdmin) {
         { title: 'Admin • Users', href: '/admin/users', icon: Shield },
         { title: 'Admin • Tips', href: '/admin/tips', icon: Shield },
         { title: 'Admin • Payouts', href: '/admin/payout-requests', icon: Shield },
+        { title: 'Admin • Terms', href: '/admin/legal/terms-and-conditions', icon: BookOpen },
+        { title: 'Admin • Privacy', href: '/admin/legal/privacy-policy', icon: BookOpen },
     );
 }
 

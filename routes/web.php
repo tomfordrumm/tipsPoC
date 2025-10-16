@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LegalPageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,6 +15,9 @@ Route::get('dashboard', \App\Http\Controllers\DashboardController::class)
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
+
+Route::get('/terms-and-conditions', [LegalPageController::class, 'terms'])->name('legal.terms');
+Route::get('/privacy-policy', [LegalPageController::class, 'privacy'])->name('legal.privacy');
 
 // Public profile editing (avatar/display name/bio/slug/quick amounts)
 Route::middleware('auth')->group(function () {

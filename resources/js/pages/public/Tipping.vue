@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -158,5 +158,10 @@ function submit() {
         </div>
       </div>
     </div>
+
+    <footer class="mx-auto mt-12 flex max-w-xl justify-end gap-4 px-6 text-xs text-muted-foreground">
+      <Link href="/terms-and-conditions" class="hover:text-foreground">Terms</Link>
+      <Link href="/privacy-policy" class="hover:text-foreground">Privacy</Link>
+    </footer>
   </div>
 </template>

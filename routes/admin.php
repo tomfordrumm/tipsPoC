@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\LegalPageController;
 use App\Http\Controllers\Admin\PayoutRequestsController;
 use App\Http\Controllers\Admin\TipsController;
 use App\Http\Controllers\Admin\UsersController;
+use App\Models\LegalPage;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
@@ -22,4 +24,14 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Payout Requests
     Route::get('/payout-requests', [PayoutRequestsController::class, 'index'])->name('admin.payout-requests.index');
     Route::patch('/payout-requests/{payoutRequest}', [PayoutRequestsController::class, 'update'])->name('admin.payout-requests.update');
+
+    // Legal pages
+    Route::prefix('legal')->name('admin.legal.')->group(function () {
+        Route::get('/{slug}', [LegalPageController::class, 'edit'])
+            ->whereIn('slug', LegalPage::ALLOWED_SLUGS)
+            ->name('edit');
+        Route::put('/{slug}', [LegalPageController::class, 'update'])
+            ->whereIn('slug', LegalPage::ALLOWED_SLUGS)
+            ->name('update');
+    });
 });
